@@ -7,6 +7,7 @@
 .text
 	.global main
 	postfix_expr:	.asciz "-100 10 20 + - 10 +"
+	.align 0x2
 
 	// "+" = 0x2B
 	// "-" = 0x2D
