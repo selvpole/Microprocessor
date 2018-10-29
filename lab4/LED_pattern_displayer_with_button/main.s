@@ -10,14 +10,18 @@
 	.equ GPIOB_MODER, 0x48000400
 	.equ GPIOB_OTYPE, 0x48000404
 	.equ GPIOB_OSPEEDR, 0x48000408
-	.equ GPIOB_PUPDR, 0x4800040C
 	.equ GPIOB_ODR, 0x48000414
+	.equ GPIOC_MODER, 0x48000800
+	.equ GPIOC_PUPDR, 0x4800080C
+	.equ GPIOC_IDR, 0x48000810
 	.equ X, 10000
 	.equ Y, 24
 
 main:
 	bl GPIO_init
 	movs r0, #0	// count
+	movs r6, #0 // button
+	movs r8, #0 // run_loop y/n
 	ldr r1, =GPIOB_ODR
 loop:
 	// TODO: Write the display pattern into leds variable
@@ -65,11 +69,12 @@ loop:
 
 // TODO: Initial LED GPIO pins as output
 GPIO_init:
-	// Enable AHB2 clock
+	// Enable PB, PC in AHB2 clock
 	ldr r0, =RCC_AHB2ENR
-	movs r1, 0x00000002
+	movs r1, 0x6
 	str r1, [r0]
 
+	/* Configure PB */
 	// configure PB3, PB4, PB5, PB6 as output pins
 	ldr r0, =GPIOB_MODER
 	ldr r1, [r0]
@@ -85,6 +90,18 @@ GPIO_init:
 	movs r1, 0x2A80
 	strh r1, [r0]
 
+	/* Configure PC */
+	// configure PC13(user button) as input pins
+	ldr r0, =GPIOC_MODER
+	ldr r1, [r0]
+	and r1, 0xF3FFFFFF
+	str r1, [r0]
+
+	// configure PC13_PUPDR as pull-up mode
+	ldr r0, =GPIOC_PUPDR
+	movs r1, 0xF7FFFFFF
+	str r1, [r0]
+
 	bx lr
 
 // Display LED by leds
@@ -97,9 +114,19 @@ displayLED:
 // TODO: write a delay 1 sec function
 delay:	// 1cycle=0.25uS => 1sec=4*10^6cycle
 	ldr r3, =X	// 2 cycle, X=10000
-l1:	ldr r4, =Y	// 2 cycle, Y=24
-l2:	subs r4, #1	// 1 cycle
-	bne l2 		// 3 cycle
+L1:	ldr r4, =Y	// 2 cycle, Y=24
+L2:	subs r4, #1	// 1 cycle
+	bne L2 		// 3 cycle
 	subs r3, #1	// 1 cycle
-	bne l1		// 3 cycle
+	bne L1		// 3 cycle
+	ldr r5, =GPIOC_IDR
+	ldr r5, [r5]
+	lsrs r5, r5, #13
+	beq switch_stat
+	cmp r8, #1
+	beq delay
 	bx lr		// 1 cycle
+
+switch_stat:
+	eor r8, r8, #1
+	b delay
