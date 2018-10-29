@@ -17,7 +17,7 @@
 
 main:
 	bl GPIO_init
-	movs r0, #1	// count
+	movs r0, #0	// count
 	ldr r1, =GPIOB_ODR
 loop:
 	// TODO: Write the display pattern into leds variable
@@ -67,7 +67,7 @@ loop:
 GPIO_init:
 	// Enable AHB2 clock
 	ldr r0, =RCC_AHB2ENR
-	movs r1, 0x2
+	movs r1, 0x00000002
 	str r1, [r0]
 
 	// configure PB3, PB4, PB5, PB6 as output pins => 0000 0000 0000 0000 0001 0101 0100 0000
@@ -90,15 +90,15 @@ GPIO_init:
 // Display LED by leds
 displayLED:
 	ldr r2, =GPIOB_ODR
-	lsl r1, #5
+	lsl r1, #3
 	strh r1, [r2]
 	bx lr
 // TODO: write a delay 1 sec function
 delay:	// 1cycle=0.25uS => 1sec=4*10^6cycle
 	ldr r3, =X	// 2 cycle, X=10000
-l1: sub r3, #1	// 1 cycle
-	ldr r4, =Y	// 2 cycle, Y=24
-l2:	sub r4, #1	// 1 cycle
+l1:	ldr r4, =Y	// 2 cycle, Y=24
+l2:	subs r4, #1	// 1 cycle
 	bne l2 		// 3 cycle
+	subs r3, #1	// 1 cycle
 	bne l1		// 3 cycle
 	bx lr		// 1 cycle
