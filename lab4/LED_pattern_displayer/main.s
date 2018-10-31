@@ -97,9 +97,9 @@ displayLED:
 // TODO: write a delay 1 sec function
 delay:	// 1cycle=0.25uS => 1sec=4*10^6cycle
 	ldr r3, =X	// 2 cycle, X=10000
-l1:	ldr r4, =Y	// 2 cycle, Y=24
-l2:	subs r4, #1	// 1 cycle
-	bne l2 		// 3 cycle
+L1:	ldr r4, =Y	// 2 cycle, Y=24
+L2:	subs r4, #1	// 1 cycle
+	bne L2 		// 3 cycle
 	subs r3, #1	// 1 cycle
-	bne l1		// 3 cycle
-	bx lr		// 1 cycle
+	bne L1		// 3 cycle
+	bx Lr		// 1 cycle
