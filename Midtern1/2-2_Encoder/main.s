@@ -7,98 +7,101 @@
 .text
 	.global main
 	.equ RCC_AHB2ENR, 0x4002104C
-	.equ GPIOB_MODER, 0x48000400
-	.equ GPIOB_OTYPE, 0x48000404
-	.equ GPIOB_OSPEEDR, 0x48000408
-	.equ GPIOB_IDR, 0x48000410	// PB3, PB4, PB5, PB6
-	.equ GPIOA_MODER, 0x48000000
-	.equ GPIOA_OSPEEDR, 0x48000008
-	.equ GPIOA_ODR, 0x48000014	// PA6, PA7, PA8, PA9
-	.equ GPIOC_MODER, 0x48000800
-	.equ GPIOC_PUPDR, 0x4800080C
-	.equ GPIOC_IDR, 0x48000810	// PC13
+	.equ GPIOB_MODER, 0x48000400 // 3 4 5 6
+	.equ GPIOB_OSPEEDR, 0x48000408 // 10 => high speed
+	.equ GPIOB_IDR, 0x48000410	// PB3, PB4, PB5, PB6 INPUT
+	.equ GPIOA_MODER, 0x48000000 // 6 7 8 9
+	.equ GPIOA_OTYPER, 0x48000004 // push-pull => 0
+	.equ GPIOA_OSPEEDR, 0x48000008 // 10 => high speed
+	.equ GPIOA_PUPDR, 0x4800000C // pull up => 01
+	.equ GPIOA_ODR, 0x48000014 // PA6, PA7, PA8, PA9 OUTPUT
 	.equ X, 1
-	.equ Y, 1000000
-	.equ password, 0xF	// 0110
+	.equ Y, 400000
 
 main:
-	bl GPIO_init
+	bl GPIO_INIT
+	movs r4, #0	// count
+	movs r3, #0	// light up
 loop:
-	ldr r9, =X
-L1:	ldr r10, =Y
-L2:	subs r10, #1
-	bne L2
-	subs r9, #1
-	bne L1	// 3 cycle
-DT: ldr r4, =GPIOB_IDR
-	ldr r4, [r4]
-	lsr r3, r4, #6
-	and r3, #1
-	lsr r2, r4, #5
-	and r2, #1
-	lsr r1, r4, #4
-	and r1, #1
-	lsr r0, r4, #3
-	and r0, #1
+	add r4, #1
+	cmp r4, #4
+	it eq
+	moveq r3, #1
+	cmp r4, #5
+	it eq
+	bleq reset_cnt
 
-	orr	r4, r0, r1
-	and r5, r5, r2
-	eor r6, r1, r0
-	orr	r3, r3, r5	//
-	lsl r3, r3, #8
-	eor r2, r4, r2	//
-	lsl r2, r2, #7
-	eor r1, r7, #1	//
-	lsl r1, r1, #6
-	eor r0, r0, #1	//
-	lsl r0, r0, #5
-	add r0, r1
-	add r0, r2
-	add r0, r3
-	// display
-	ldr r2, =GPIOA_ODR
-	strh r0, [r2]
-
+	bl delay
 	b loop
 
-// TODO: Initial LED GPIO pins as output
-GPIO_init:
-	// Enable PA, PB, PC in AHB2 clock
+reset_cnt:
+	movs r4, #0
+	movs r3, #0
+	bx lr
+
+GPIO_INIT:
+	/* AHB2 */
 	ldr r0, =RCC_AHB2ENR
 	movs r1, 0x3
 	str r1, [r0]
 
-	/* Configure PB */
-	// configure PB3, PB4, PB5, PB6 as input pins
+	/* GPIOB */
+	// MODER 3 4 5 6, input => 00
 	ldr r0, =GPIOB_MODER
 	ldr r1, [r0]
 	and r1, 0xFFFFC03F
-	movs r2, 0x0000
-	orrs r1, r1, r2
 	str r1, [r0]
 
-	// configure OtypeR(default as Push-Pull), no need to set
-
-	// configure Ospeed as high speed mode(10)
+	// OSPEEDR
 	ldr r0, =GPIOB_OSPEEDR
-	movs r1, 0x2A80
-	strh r1, [r0]
+	ldr r1, [r0]
+	and r1, 0xFFFFC03F
+	orr r1, 0x00002A80
+	str r1, [r0]
 
-	/* Configure PA */
-	// configure PA5, PA6, PA7, PA8 as ouput pins
+	/* GPIOA */
+	// MODER 6 7 8 9, output => 01
 	ldr r0, =GPIOA_MODER
 	ldr r1, [r0]
-	and r1, 0xFFFC03FF
-	movs r2, 0x5700
-	add r2, 0xB0000
-	orrs r1, r1, r2
+	and r1, 0xFFF00FFF
+	orr r1, 0x00055000
 	str r1, [r0]
 
-	// configure Ospeed as high speed mode(10)
+	// OSPEEDR
 	ldr r0, =GPIOA_OSPEEDR
-	movs r1, 0x5700
-	add r2, 0xB0000
-	strh r1, [r0]
+	ldr r1, [r0]
+	and r1, 0xFFF00FFF
+	orr r1, 0x000AA000
+	str r1, [r0]
 
+	// PUPDR
+	ldr r0, =GPIOA_PUPDR
+	ldr r1, [r0]
+	and r1, 0xFFF00FFF
+	orr r1, 0x00055000
+	str r1, [r0]
+
+	bx lr
+
+delay:	// 1 sec
+	ldr r1, =X
+L1:
+	ldr r2, =Y
+L2:
+	/* Detect */
+	ldr r5, =GPIOB_IDR
+	ldr r6, [r5]
+	lsl r6, #3
+	sub r6, 0b11000000
+	cmp r3, #1
+	it eq
+	moveq r6, #0
+	ldr r5, =GPIOA_ODR
+	str r6, [r5]
+
+	subs r2, #1
+	bne L2
+	subs r1, #1
+	bne L1
 
 	bx lr
