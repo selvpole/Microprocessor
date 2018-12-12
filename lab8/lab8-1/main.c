@@ -1,8 +1,4 @@
 #include "../inc/stm32l476xx.h"
-#define SYST_CSR	(*((uint32_t *)0xe000e010))
-#define SYST_RVR	(*((uint32_t *)0xe000e014))
-#define SYST_CVR	(*((uint32_t *)0xe000e018))
-#define SYST_CALIB	(*((uint32_t *)0xe000e01c))
 int tim=0;
 
 void SystemClock_Config(){
@@ -20,17 +16,6 @@ void SystemClock_Config(){
 	//system interrupt happens for every 8000000 cpu cycles, that is the peroid of 2 second
 	SysTick->CTRL |= 0x00000007; //processor clock, turn on all
 
-}
-
-void led_toggle(){
-	if(GPIOB->ODR & GPIO_ODR_OD3){
-		GPIOB->BRR = GPIO_BRR_BR3;
-		SysTick->LOAD = (uint32_t)7999999;
-	}
-	else{
-		GPIOB->BSRR = GPIO_BSRR_BS3;
-		SysTick->LOAD = (uint32_t)31999999;
-	}
 }
 
 void SysTick_Handler(void){
