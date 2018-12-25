@@ -13,25 +13,24 @@ void SystemClock_Config(int clock_speed_Mhz){
 		case 1:
 			pr=3;pn=8;;pm=0;
 			break;
-        case 6:
+     		case 6:
 			pr=3;pn=12;pm=0; // 4/8*12/1 = 6
 			break;
 		case 10:
 			pr=3;pn=40;pm=0; // 4/8*20/1 = 10
 			break;
 		case 16:
-            pr=3;pn=32;pm=0; // 4/8*32/1 = 16
-            break;
-        case 40:
-            pr=3;pn=80;pm=1; // 4/8*80/1 = 40
-            break;
-        default: // Same as input source
-        	pr=3;pn=8;pm=1;
-        	break;
+            		pr=3;pn=32;pm=0; // 4/8*32/1 = 16
+          		break;
+       		case 40:
+          		pr=3;pn=80;pm=1; // 4/8*80/1 = 40
+         		break;
+        	default: // Same as input source
+        		pr=3;pn=8;pm=1;
+        		break;
 	}
 
 	/* RCC MSI */
-
 	// Config MSI
 	SET_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW_MSI);
 	while((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI) ;
